@@ -1,6 +1,6 @@
 import { getConfig } from "@/lib/config";
 import { toAct402Error } from "@/lib/errors";
-import { baseUrlFrom, errorFrom, errorJson, isGatewayAuthorized, json, readJson } from "@/lib/http";
+import { baseUrlFrom, errorFrom, errorJson, isGatewayAuthorized, json, methodNotAllowed, readJson } from "@/lib/http";
 import { parseActRequest } from "@/lib/act/schema";
 import { runTask } from "@/lib/act/run-task";
 import { EXAMPLE_REQUEST } from "@/lib/capabilities";
@@ -48,3 +48,7 @@ export function GET(): Response {
 export function OPTIONS(): Response {
   return new Response(null, { status: 204, headers: { allow: "POST, OPTIONS" } });
 }
+
+export const PUT = methodNotAllowed("POST /act");
+export const PATCH = methodNotAllowed("POST /act");
+export const DELETE = methodNotAllowed("POST /act");

@@ -8,13 +8,14 @@
     "node": ">=20.9"
   },
   "scripts": {
-    "dev": "next dev -p ${PORT:-3000}",
+    "dev": "next dev",
     "build": "next build",
-    "start": "next start -p ${PORT:-3000} -H 0.0.0.0",
+    "start": "next start -H 0.0.0.0",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",
+    "audit:api": "node scripts/audit.mjs",
     "browser:install": "playwright-core install chromium"
   },
   "dependencies": {
@@ -23,7 +24,6 @@
     "playwright-core": "^1.63.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "tldts": "^7.4.16",
     "zod": "^4.6.5"
   },
   "devDependencies": {

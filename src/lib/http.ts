@@ -38,10 +38,24 @@ export function errorFrom(err: Act402Error): Response {
   );
 }
 
-/** Public origin of this deployment, for absolute evidence URLs. */
+/** JSON 405 for methods an endpoint does not support. */
+export function methodNotAllowed(usage: string): () => Response {
+  const allow = `${usage.split(" ")[0]}, OPTIONS`;
+  return () => errorJson("METHOD_NOT_ALLOWED", `Use ${usage}.`, undefined, { allow });
+}
+
+/**
+ * Public origin of this deployment, for absolute evidence URLs. On a Replit
+ * deployment the app's own domain is used, so URLs stay correct even when the
+ * request arrived through the x402 gateway.
+ */
 export function baseUrlFrom(req: Request): string {
   const configured = getConfig().publicBaseUrl;
   if (configured) return configured;
+  if (process.env.REPLIT_DEPLOYMENT) {
+    const domain = (process.env.REPLIT_DOMAINS ?? "").split(",")[0]?.trim();
+    if (domain) return `https://${domain}`;
+  }
   const headers = req.headers;
   const host = headers.get("x-forwarded-host")?.split(",")[0].trim() || headers.get("host") || "";
   if (!host) return "";
