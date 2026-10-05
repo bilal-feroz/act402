@@ -119,7 +119,8 @@ export class LocalPlaywrightProvider implements BrowserProvider {
         chromiumSandbox: config.chromiumSandbox,
         proxy: { server: proxy.url },
         args: LAUNCH_ARGS,
-        timeout: 30_000,
+        // A cold start on a small shared VM can take well over 30 s.
+        timeout: 60_000,
       });
       browser.on("disconnected", () => {
         if (this.browser === browser) this.browser = undefined;
@@ -146,6 +147,11 @@ export class LocalPlaywrightProvider implements BrowserProvider {
       log("browser_recycled", {});
     }
     this.launching ??= this.launch()
+      .catch((err) => {
+        if (err instanceof Act402Error && err.code === "BROWSER_PROVIDER_NOT_CONFIGURED") throw err;
+        log("browser_launch_retry", {}, "warn");
+        return this.launch();
+      })
       .then((b) => {
         this.browser = b;
         return b;
@@ -154,6 +160,15 @@ export class LocalPlaywrightProvider implements BrowserProvider {
         this.launching = undefined;
       });
     return this.launching;
+  }
+
+  /** Start Chromium in the background so the first paid request does not pay the launch cost. */
+  warmUp(): void {
+    if (!this.isConfigured()) return;
+    this.getBrowser().then(
+      () => log("browser_warm", {}),
+      () => undefined,
+    );
   }
 
   async createSession(options: SessionOptions): Promise<BrowserSession> {
