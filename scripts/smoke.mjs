@@ -90,7 +90,6 @@ const scenarios = [
     expect: (r, s) => s === 200 && r.download?.mime_type === "application/pdf" && r.download.size_bytes > 100_000,
   },
   {
-  {
     name: "visit_mode",
     body: { url: "https://example.com" },
     expect: (r, s) => s === 200 && /documentation examples/.test(r.result.text) && r.evidence?.[0]?.name === "final.png",
