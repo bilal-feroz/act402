@@ -5,11 +5,16 @@ The calling agent is the brain; Act402 is the browser.
 
 ## Endpoints
 
-| Method | Path | Price |
-| --- | --- | --- |
-| GET | `/health` | free |
-| GET | `/capabilities` | free |
-| POST | `/act` | $0.50 USDC (x402) |
+| Method | Path | Price | What it does |
+| --- | --- | --- | --- |
+| GET | `/health` | free | liveness |
+| GET | `/capabilities` | free | request schema, prices, limits |
+| POST | `/act` | $0.50 USDC | run up to 20 browser actions |
+| POST | `/extract` | $0.15 USDC | text/links/table/attribute from a rendered page (`url`, `selector`, `format`) |
+| POST | `/screenshot` | $0.10 USDC | PNG of a page or element (`url`, `selector`, `full_page`) |
+| POST | `/download` | $0.25 USDC | public file by URL, or behind a link/button (`url`, `target`) |
+
+`/extract` and `/screenshot` also accept `wait_for_selector`, `wait_for_text`, `wait_ms`.
 
 ## POST /act
 

@@ -1,36 +1,14 @@
-import { getConfig } from "@/lib/config";
-import { toAct402Error } from "@/lib/errors";
-import { baseUrlFrom, errorFrom, errorJson, isGatewayAuthorized, json, methodNotAllowed, readJson } from "@/lib/http";
-import { parseActRequest } from "@/lib/act/schema";
-import { runTask } from "@/lib/act/run-task";
+import { json, methodNotAllowed } from "@/lib/http";
+import { handlePaidTask } from "@/lib/act/endpoint";
+import type { RawBody } from "@/lib/act/quick";
 import { EXAMPLE_REQUEST } from "@/lib/capabilities";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** POST /act — the paid endpoint. Runs one browser task and returns structured JSON. */
-export async function POST(req: Request): Promise<Response> {
-  if (!isGatewayAuthorized(req)) {
-    return errorJson("UNAUTHORIZED", "Missing or invalid gateway key. Call Act402 through its x402 marketplace URL.", undefined, {
-      "www-authenticate": 'Bearer realm="act402"',
-    });
-  }
-  const body = await readJson(req);
-  if (!body.ok) {
-    return errorJson("INVALID_REQUEST", body.reason, { example: EXAMPLE_REQUEST });
-  }
-  let parsed;
-  try {
-    parsed = parseActRequest(body.value, getConfig());
-  } catch (err) {
-    return errorFrom(toAct402Error(err, "INVALID_REQUEST"));
-  }
-  try {
-    const outcome = await runTask(parsed.request, parsed.warnings, { source: "api", baseUrl: baseUrlFrom(req) });
-    return json(outcome.body, outcome.httpStatus, { "x-act402-task-id": outcome.taskId });
-  } catch (err) {
-    return errorFrom(toAct402Error(err));
-  }
+/** POST /act — run a list of browser actions and return structured JSON ($0.50). */
+export function POST(req: Request): Promise<Response> {
+  return handlePaidTask(req, (body) => ({ raw: body as RawBody }), { example: EXAMPLE_REQUEST });
 }
 
 export function GET(): Response {

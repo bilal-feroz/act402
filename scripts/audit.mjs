@@ -194,5 +194,55 @@ await check("Concurrency: 4 parallel (2 slots + queue)", async () => {
   return `all 200 in ${Date.now() - started} ms`;
 });
 
+// ---- single-purpose paid endpoints ----
+await check("POST /screenshot page", async () => {
+  const r = await call("POST", "/screenshot", { url: "https://example.com" });
+  expect(r.status === 200 && r.json?.screenshot?.url?.includes("/evidence/"), `status ${r.status} ${r.text.slice(0, 160)}`);
+  const img = await fetch(r.json.screenshot.url.startsWith("http") ? r.json.screenshot.url : base + r.json.screenshot.url);
+  expect(img.status === 200 && img.headers.get("content-type") === "image/png", `image ${img.status}`);
+  return `${r.json.duration_ms} ms task`;
+});
+await check("POST /screenshot full_page", async () => {
+  const r = await call("POST", "/screenshot", { url: "https://books.toscrape.com", full_page: true });
+  expect(r.status === 200 && r.json?.screenshot?.full_page === true, `status ${r.status} ${r.text.slice(0, 160)}`);
+});
+await check("POST /extract default (body text)", async () => {
+  const r = await call("POST", "/extract", { url: "https://example.com" });
+  expect(r.status === 200 && /documentation examples/.test(r.json?.result?.text ?? ""), `status ${r.status} ${r.text.slice(0, 160)}`);
+});
+await check("POST /extract table", async () => {
+  const r = await call("POST", "/extract", { url: "https://www.scrapethissite.com/pages/forms/", selector: "table.table", format: "table" });
+  const rows = r.json?.result?.extracts?.[0]?.table?.rows?.length ?? 0;
+  expect(r.status === 200 && rows >= 20, `status ${r.status} rows ${rows}`);
+  return `${rows} rows`;
+});
+await check("POST /download direct file URL", async () => {
+  const r = await call("POST", "/download", { url: "https://arxiv.org/pdf/1706.03762" });
+  expect(r.status === 200 && r.json?.download?.mime_type === "application/pdf", `status ${r.status} ${r.text.slice(0, 160)}`);
+  return `${r.json.download.filename} ${r.json.download.size_bytes} bytes`;
+});
+await check("POST /download behind a link", async () => {
+  const r = await call("POST", "/download", { url: "https://arxiv.org/abs/1706.03762", target: "View PDF" });
+  expect(r.status === 200 && r.json?.download?.mime_type === "application/pdf", `status ${r.status} ${r.text.slice(0, 160)}`);
+});
+await check("POST /download page without target -> 422", async () => {
+  const r = await call("POST", "/download", { url: "https://example.com" });
+  expect(r.status === 422 && r.json?.error?.code === "DOWNLOAD_FAILED", `status ${r.status} ${r.json?.error?.code}`);
+});
+await check("GET on paid single-purpose endpoints -> 405", async () => {
+  for (const p of ["/screenshot", "/extract", "/download"]) {
+    const r = await call("GET", p);
+    expect(r.status === 405 && r.json?.error?.code === "METHOD_NOT_ALLOWED", `${p} -> ${r.status}`);
+  }
+});
+if (key) {
+  await check("Paid endpoints refuse calls without the key -> 401", async () => {
+    for (const p of ["/act", "/screenshot", "/extract", "/download"]) {
+      const res = await fetch(base + p, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ url: "https://example.com" }) });
+      expect(res.status === 401, `${p} -> ${res.status}`);
+    }
+  });
+}
+
 console.log(`\n${failed === 0 ? "ALL PASSED" : `${failed} FAILED`}`);
 process.exit(failed ? 1 : 0);

@@ -155,10 +155,22 @@ export async function runTask(request: ActRequest, warnings: string[], opts: Run
         });
         emit({ type: "started", at_ms: Date.now() - startedAt, task_id: taskId, provider: provider.name });
         try {
-          await runner.open(request.url, request.waitUntil, request.dismissCookieBanners);
+          if (request.openUrl !== false) await runner.open(request.url, request.waitUntil, request.dismissCookieBanners);
           for (let i = 0; i < request.actions.length; i++) {
             if (opts.signal?.aborted) throw new Act402Error("TASK_NOT_COMPLETED", "The request was cancelled.");
             await runner.run(request.actions[i], i);
+          }
+          if (request.requireDownload) {
+            const file = runner.evidence.find((e) => e.type === "download");
+            if (!file) {
+              throw new Act402Error("DOWNLOAD_FAILED", "No file was downloaded. If the URL is a web page, pass `target` (the link or button that leads to the file).");
+            }
+            if (request.openUrl === false && /^(text\/html|application\/xhtml\+xml)/i.test(file.mime_type ?? "")) {
+              throw new Act402Error(
+                "DOWNLOAD_FAILED",
+                "The URL is a web page, not a file. Pass `target` (the link or button that leads to the file), or use POST /extract to read the page.",
+              );
+            }
           }
           if (request.finalScreenshot) await runner.captureFinal();
           collected = await runner.collect({
@@ -166,6 +178,10 @@ export async function runTask(request: ActRequest, warnings: string[], opts: Run
             downloadLinks: request.returnFields.has("download_links"),
             pageText: request.returnFields.has("page_text"),
           });
+          if (request.openUrl === false) {
+            // The page was never opened (direct file download): report where the file came from.
+            collected.final_url = runner.evidence.find((e) => e.type === "download")?.download_url ?? request.url;
+          }
           dialogs.push(...session.dialogs);
           break;
         } catch (err) {

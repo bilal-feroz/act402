@@ -15,6 +15,7 @@ import { parseActRequest } from "@/lib/act/schema";
 import { runTask, type RunTaskOptions } from "@/lib/act/run-task";
 import { LocalPlaywrightProvider, findChromium } from "@/lib/browser/local-playwright";
 import { Semaphore } from "@/lib/browser/limiter";
+import { buildDownload, buildExtract, buildScreenshot, type BuiltTask } from "@/lib/act/quick";
 
 const PAGES: Record<string, string> = {
   "/": `<!doctype html><title>Test Shop</title>
@@ -56,6 +57,16 @@ let provider: LocalPlaywrightProvider;
 async function act(body: Record<string, unknown>, over: Partial<RunTaskOptions> = {}) {
   const { request, warnings } = parseActRequest({ url: `${origin}/`, ...body }, getConfig());
   const outcome = await runTask(request, warnings, opts(over));
+  return { status: outcome.httpStatus, body: outcome.body as Record<string, any> };
+}
+
+/** Run one of the single-purpose endpoints (/screenshot, /extract, /download) exactly as its route does. */
+async function quick(build: (b: unknown) => BuiltTask, body: Record<string, unknown>) {
+  const built = build({ url: `${origin}/`, ...body });
+  const { request, warnings } = parseActRequest(built.raw, getConfig());
+  request.openUrl = built.openUrl ?? true;
+  request.requireDownload = built.requireDownload ?? false;
+  const outcome = await runTask(request, warnings, opts());
   return { status: outcome.httpStatus, body: outcome.body as Record<string, any> };
 }
 
@@ -200,6 +211,39 @@ describe.skipIf(!hasChromium)("TaskRunner against a local site (real Chromium)",
     expect(status).toBe(504);
     expect(body.error.code).toBe("TIMEOUT");
     expect(provider.status().activeSessions).toBe(0);
+  });
+
+  it("/screenshot captures an element", async () => {
+    const { status, body } = await quick(buildScreenshot, { selector: "#t" });
+    expect(status).toBe(200);
+    expect(body.evidence).toHaveLength(1);
+    expect(body.evidence[0]).toMatchObject({ type: "screenshot", name: "screenshot.png", target: "selector #t" });
+    expect(body).not.toHaveProperty("steps");
+  });
+
+  it("/extract returns a table after waiting for it", async () => {
+    const { status, body } = await quick(buildExtract, { selector: "#t", format: "table", wait_for_selector: "#t" });
+    expect(status).toBe(200);
+    expect(body.result.extracts[0].table.rows).toEqual([["Basic", "$9"], ["Pro", "$49"]]);
+  });
+
+  it("/download fetches a direct file URL without opening a page", async () => {
+    const { status, body } = await quick(buildDownload, { url: `${origin}/files/report.pdf` });
+    expect(status).toBe(200);
+    expect(body.download).toMatchObject({ filename: "report.pdf", mime_type: "application/pdf" });
+    expect(body.final_url).toBe(`${origin}/files/report.pdf`);
+  });
+
+  it("/download clicks through to a file behind a link", async () => {
+    const { status, body } = await quick(buildDownload, { target: "Annual report" });
+    expect(status).toBe(200);
+    expect(body.download.filename).toBe("report.pdf");
+  });
+
+  it("/download fails (and is not charged) when the URL is a page and no target is given", async () => {
+    const { status, body } = await quick(buildDownload, {});
+    expect(status).toBe(422);
+    expect(body.error.code).toBe("DOWNLOAD_FAILED");
   });
 
   it("runs tasks concurrently in isolated contexts", async () => {

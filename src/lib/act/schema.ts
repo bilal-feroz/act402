@@ -168,6 +168,10 @@ export interface ActRequest {
   dismissCookieBanners: boolean;
   finalScreenshot: boolean;
   maxSteps: number;
+  /** false = do not load `url` first (direct file download). */
+  openUrl?: boolean;
+  /** Fail (and so never charge) unless a file was downloaded. */
+  requireDownload?: boolean;
 }
 
 export interface ValidationIssue {
