@@ -1,0 +1,19 @@
+modules = ["nodejs-22", "web"]
+run = "npm run dev"
+hidden = [".config", ".next", "node_modules", ".data"]
+
+[nix]
+packages = ["chromium"]
+
+[env]
+PORT = "3000"
+NEXT_TELEMETRY_DISABLED = "1"
+
+[deployment]
+deploymentTarget = "vm"
+build = ["sh", "-c", "npm ci --no-audit --no-fund && npm run build"]
+run = ["sh", "-c", "npm run start"]
+
+[[ports]]
+localPort = 3000
+externalPort = 80
