@@ -6,7 +6,6 @@ import type { BrowserProvider, BrowserSession } from "../browser/provider";
 import { checkClickName, checkGoal, checkTypedValue } from "../security/action-policy";
 import { checkUrl, checkUrlSyntax, type UrlPolicy } from "../security/url-guard";
 import { getTaskStore } from "../storage/tasks";
-import { highlightEvidence, runHeuristicGoal } from "../goal/heuristic";
 import { hostnameOf, newTaskId, preview } from "../util";
 import { buildResponse } from "./response";
 import { TaskRunner, type CollectedResult } from "./runner";
@@ -156,20 +155,10 @@ export async function runTask(request: ActRequest, warnings: string[], opts: Run
         });
         emit({ type: "started", at_ms: Date.now() - startedAt, task_id: taskId, provider: provider.name });
         try {
-          if (request.mode === "goal") {
-            answer = await runHeuristicGoal(runner, request);
-            if (answer.evidence_text) {
-              const highlighted = await highlightEvidence(runner.page, answer.evidence_text);
-              if (highlighted && request.finalScreenshot) await runner.captureFinal("evidence.png");
-              const shot = runner.evidence.find((e) => e.type === "screenshot" && e.name.startsWith("evidence"));
-              if (shot) shot.text_excerpt = answer.evidence_text;
-            }
-          } else {
-            await runner.open(request.url, request.waitUntil, request.dismissCookieBanners);
-            for (let i = 0; i < request.actions.length; i++) {
-              if (opts.signal?.aborted) throw new Act402Error("TASK_NOT_COMPLETED", "The request was cancelled.");
-              await runner.run(request.actions[i], i);
-            }
+          await runner.open(request.url, request.waitUntil, request.dismissCookieBanners);
+          for (let i = 0; i < request.actions.length; i++) {
+            if (opts.signal?.aborted) throw new Act402Error("TASK_NOT_COMPLETED", "The request was cancelled.");
+            await runner.run(request.actions[i], i);
           }
           if (request.finalScreenshot) await runner.captureFinal();
           collected = await runner.collect({

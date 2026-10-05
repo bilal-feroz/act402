@@ -90,10 +90,6 @@ const scenarios = [
     expect: (r, s) => s === 200 && r.download?.mime_type === "application/pdf" && r.download.size_bytes > 100_000,
   },
   {
-    name: "goal_mode_heuristic",
-    body: { url: "https://books.toscrape.com", goal: "Open the Travel category and return the price of the first book" },
-    expect: (r, s) => s === 200 && /£\s?\d/.test(r.result.answer ?? ""),
-  },
   {
     name: "visit_mode",
     body: { url: "https://example.com" },

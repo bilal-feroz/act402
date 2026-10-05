@@ -3,7 +3,7 @@ import { toAct402Error } from "@/lib/errors";
 import { baseUrlFrom, errorFrom, errorJson, isGatewayAuthorized, json, readJson } from "@/lib/http";
 import { parseActRequest } from "@/lib/act/schema";
 import { runTask } from "@/lib/act/run-task";
-import { EXAMPLE_REQUESTS } from "@/lib/capabilities";
+import { EXAMPLE_REQUEST } from "@/lib/capabilities";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ export async function POST(req: Request): Promise<Response> {
   }
   const body = await readJson(req);
   if (!body.ok) {
-    return errorJson("INVALID_REQUEST", body.reason, { example: EXAMPLE_REQUESTS.click_extract_screenshot });
+    return errorJson("INVALID_REQUEST", body.reason, { example: EXAMPLE_REQUEST });
   }
   let parsed;
   try {
@@ -38,7 +38,7 @@ export function GET(): Response {
     {
       success: false,
       error: { code: "METHOD_NOT_ALLOWED", message: "Use POST /act with a JSON body. See GET /capabilities for the full contract." },
-      example: EXAMPLE_REQUESTS.click_extract_screenshot,
+      example: EXAMPLE_REQUEST,
     },
     405,
     { allow: "POST, OPTIONS" },

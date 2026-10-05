@@ -3,7 +3,8 @@ run = "npm run dev"
 hidden = [".config", ".next", "node_modules", ".data"]
 
 [nix]
-packages = ["chromium"]
+channel = "stable-25_05"
+packages = ["chromium", "git"]
 
 [env]
 PORT = "3000"

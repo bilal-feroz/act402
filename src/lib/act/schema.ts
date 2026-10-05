@@ -379,9 +379,11 @@ export function parseActRequest(body: unknown, config: Act402Config, overrides?:
   let mode: ActMode = "visit";
   if (actions.length > 0) {
     mode = "actions";
-    if (goal) warnings.push("Both `actions` and `goal` were sent; `actions` were executed and `goal` was ignored.");
+    if (goal) warnings.push("`goal` is not supported and was ignored; only `actions` were executed.");
   } else if (goal) {
-    mode = "goal";
+    throw new Act402Error("INVALID_REQUEST", "Act402 executes explicit browser actions; send an `actions` array instead of a natural-language `goal`.", {
+      example: { url: raw.url, actions: [{ type: "click", target: { text: "Pricing" } }, { type: "extract", target: { selector: "body" } }] },
+    });
   }
 
   return {

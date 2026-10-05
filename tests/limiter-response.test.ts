@@ -69,7 +69,8 @@ describe("buildResponse", () => {
       success: true,
       status: "completed",
       task_id: "act_0123456789abcdef01234567",
-      result: { text: "secret page text", final_url: "https://example.com/" },
+      final_url: "https://example.com/",
+      result: { text: "secret page text" },
       actions_executed: 1,
       duration_ms: 1234,
       evidence: [{ type: "screenshot", url: expect.stringContaining("/evidence/") }],
@@ -78,7 +79,7 @@ describe("buildResponse", () => {
 
   it("never returns extracted content when the task failed", () => {
     const body = buildResponse(input({ error: new Act402Error("TARGET_NOT_FOUND", "nope") }));
-    expect(body).toMatchObject({ success: false, status: "failed", error: { code: "TARGET_NOT_FOUND" } });
+    expect(body).toMatchObject({ success: false, status: "failed", error: { code: "TARGET_NOT_FOUND" }, final_url: "https://example.com/" });
     expect(JSON.stringify(body)).not.toContain("secret page text");
     expect(body).not.toHaveProperty("evidence");
   });

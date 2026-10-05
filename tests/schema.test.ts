@@ -65,8 +65,8 @@ describe("parseActRequest", () => {
     expect(request.actions[4]).toMatchObject({ key: "Enter" });
   });
 
-  it("detects goal and visit modes", () => {
-    expect(parse({ url: "https://example.com", goal: "Find the pricing page" }).request.mode).toBe("goal");
+  it("executes explicit actions only: goal-only requests are rejected", () => {
+    expectError({ url: "https://example.com", goal: "Find the pricing page" }, "INVALID_REQUEST");
     expect(parse({ url: "https://example.com" }).request.mode).toBe("visit");
     const both = parse({ url: "https://example.com", goal: "x y z", actions: [{ type: "extract" }] });
     expect(both.request.mode).toBe("actions");

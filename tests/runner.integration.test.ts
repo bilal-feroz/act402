@@ -124,7 +124,7 @@ describe.skipIf(!hasChromium)("TaskRunner against a local site (real Chromium)",
     expect(status).toBe(200);
     expect(body.result.extracts[0].table).toEqual({ headers: ["Plan", "Price"], rows: [["Basic", "$9"], ["Pro", "$49"]] });
     expect(body.result.extracts[1].items).toEqual(["Alpha", "Beta", "Gamma"]);
-    expect(body.result.final_url).toBe(`${origin}/pricing`);
+    expect(body.final_url).toBe(`${origin}/pricing`);
     expect(body.result.text).toBe("Pro costs $49/month");
   });
 
@@ -200,14 +200,6 @@ describe.skipIf(!hasChromium)("TaskRunner against a local site (real Chromium)",
     expect(status).toBe(504);
     expect(body.error.code).toBe("TIMEOUT");
     expect(provider.status().activeSessions).toBe(0);
-  });
-
-  it("answers a simple goal with the heuristic planner", async () => {
-    const { status, body } = await act({ goal: "Go to pricing and return the Pro plan price" });
-    expect(status).toBe(200);
-    expect(body.result.answer).toBe("$49/month");
-    expect(body.result.final_url).toBe(`${origin}/pricing`);
-    expect(body.evidence[0].text_excerpt).toContain("Pro costs $49/month");
   });
 
   it("runs tasks concurrently in isolated contexts", async () => {
