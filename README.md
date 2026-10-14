@@ -1,6 +1,6 @@
 # Act402
 
-Real Chromium browser for autonomous AI agents, sold per call over x402 on the XDC AI marketplace.
+Realll Chromium browser for autonomous AI agents, sold per call over x402 on the XDC AI marketplace.
 The calling agent is the brain; Act402 is the browser.
 
 ## Endpoints
